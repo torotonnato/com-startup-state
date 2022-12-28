@@ -10,7 +10,7 @@ main:
 	push ds
 	pusha			  ;push ax, cx, dx, bx, sp, bp, si, di
 				  ;sp should be adjusted but \_(^ ^)_/
-	mov si, regs              ;The lesser evil...
+	mov si, regs
 	mov cx, 15                ;Don't assume ch = 0
 show_regs_loop:
 	lodsb                     ;Load encoded reg name into al
@@ -40,32 +40,31 @@ show_mem_loop:
 	mov bx, si
 	call print_num_16bit
 show_mem_no_ofs:
-	lodsb
+	mov bh, [si]
+	inc si
 	call print_num_8bit
 	loop show_mem_loop
-
 	ret
 
-;Precondition: ah= 0x02, bx= n
+;Precondition: ah = 0x02, bx = n
 print_num_16bit:
-	mov dh, 8
-	jmp print_num_loop
-;Precondition: ah= 0x02, al= n
+	mov dh, ah
+;Precondition: ah = 0x02, dh = 0x00, bh = n
 print_num_8bit:
-	mov dh, 4
-	mov bh, al
+	add dh, ah                ;Clears AF
 print_num_loop:
 	rol bx, 4
-	mov al, bl                ;This block...
-	and al, 0x0F              ;
-	cmp al, 10                ;
-	jge print_num_gt_10       ;
-	add al, '0' - ('A' - 10)  ;
-print_num_gt_10:                  ;
-	add al, 'A' - 10          ;...can probably be optimized further
+	mov al, bl
+        aaa                       ;AF should be undefined after rol
+                                  ;but practically is cleared
+        jnc print_num_lt10_digit
+	add al, 'A' - '0'
+	mov ah, 2                 ;Sadly needed
+print_num_lt10_digit:
+	add al, '0'
 	mov dl, al
 	int 0x21
-	sub dh, ah
+	dec dh
 	jnz print_num_loop
 	mov dl, ' '
 	int 0x21
