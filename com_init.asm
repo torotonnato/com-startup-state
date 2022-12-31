@@ -11,7 +11,8 @@ main:
 	pusha			  ;push ax, cx, dx, bx, sp, bp, si, di
 				  ;sp should be adjusted but \_(^ ^)_/
 	mov si, regs
-	mov cx, 15                ;Don't assume ch = 0
+	mov cl, 15                ;ch will be cleared after the first
+				  ;call to print_hex_u16
 show_regs_loop:
 	lodsb                     ;Load encoded reg name into al
 	aam 0x10                  ;Unpack al (4:4) -> ah:al
