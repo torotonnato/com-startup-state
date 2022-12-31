@@ -28,49 +28,50 @@ show_regs_loop:
 	call print_num_16bit
 	loop show_regs_loop
 
-	sub si, si
-	mov ch, 1
+	sub di, di
 show_mem_loop:
 	test cl, 0x0F
 	jnz show_mem_no_ofs
 	mov dl, 0x0A
 	int 0x21
 	mov bx, cs
-	call print_num_16bit
-	mov bx, si
-	call print_num_16bit
+	call si                   ;print_num_16bit
+	mov bx, di
+	call si                   ;print_num_16bit
 show_mem_no_ofs:
-	mov bh, [si]
-	inc si
+	mov bh, [di]
+	inc di
 	call print_num_8bit
-	loop show_mem_loop
-	ret
+	dec cl
+	jnz show_mem_loop
 
-;Precondition: ah = 0x02, bx = n
-print_num_16bit:
-	mov dh, ah
-;Precondition: ah = 0x02, dh = 0x00, bh = n
-print_num_8bit:
-	add dh, ah                ;Clears AF
-print_num_loop:
-	rol bx, 4
-	mov al, bl
-        aaa                       ;AF should be undefined after rol
-                                  ;but practically is cleared
-        jnc print_num_lt10_digit
-	add al, 'A' - '0'
-	mov ah, 2                 ;Sadly needed
-print_num_lt10_digit:
-	add al, '0'
-	mov dl, al
-	int 0x21
-	dec dh
-	jnz print_num_loop
-	mov dl, ' '
-	int 0x21
 	ret
 
 ;Compressed registers names (see encode_regs.py)
 regs:
         db 0x03, 0x0c, 0x71, 0x7c, 0xf1, 0xf3, 0xf2, 0xf0
         db 0xa3, 0xa4, 0xac, 0xa2, 0xa5, 0xa6, 0x35
+
+;Precondition: ah = 0x02, bx = n
+print_num_16bit:
+	mov ch, ah
+;Precondition: ah = 0x02, dh = 0x00, bh = n
+print_num_8bit:
+	add ch, ah                ;Clears AF
+print_num_loop:
+	rol bx, 4
+	mov al, bl
+        aaa                       ;AF should be undefined after rol
+                                  ;but practically stays cleared
+        jnc print_num_lt10_digit
+	add al, 'A' - '0'
+print_num_lt10_digit:
+	add al, '0'
+	mov dh, 2
+	xchg ax, dx
+	int 0x21
+	dec ch
+	jnz print_num_loop
+	mov dl, ' '
+	int 0x21
+	ret
