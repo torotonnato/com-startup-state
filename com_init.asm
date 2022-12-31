@@ -17,31 +17,29 @@ show_regs_loop:
 	aam 0x10                  ;Unpack al (4:4) -> ah:al
 	daa                       ;Magic
 	add ax, 'A' + ('I' * 256) ;ax = reg name (reverse order)
-	xchg ax, dx
-	mov ah, 2
-	int 0x21
+	call print_ch
 	mov dl, dh
 	int 0x21
 	mov dl, '='
 	int 0x21
 	pop bx
-	call print_num_16bit
+	call print_hex_u16
 	loop show_regs_loop
 
 	sub di, di
 show_mem_loop:
 	test cl, 0x0F
-	jnz show_mem_no_ofs
+	jnz show_mem_data
 	mov dl, 0x0A
 	int 0x21
 	mov bx, cs
-	call si                   ;print_num_16bit
+	call si                   ;print_hex_u16
 	mov bx, di
-	call si                   ;print_num_16bit
-show_mem_no_ofs:
+	call si                   ;print_hex_u16
+show_mem_data:
 	mov bh, [di]
 	inc di
-	call print_num_8bit
+	call print_hex_u8
 	dec cl
 	jnz show_mem_loop
 
@@ -53,25 +51,26 @@ regs:
         db 0xa3, 0xa4, 0xac, 0xa2, 0xa5, 0xa6, 0x35
 
 ;Precondition: ah = 0x02, bx = n
-print_num_16bit:
+print_hex_u16:
 	mov ch, ah
-;Precondition: ah = 0x02, dh = 0x00, bh = n
-print_num_8bit:
+;Precondition: ah = 0x02, ch = 0x00, bh = n
+print_hex_u8:
 	add ch, ah                ;Clears AF
-print_num_loop:
+print_hex_loop:
 	rol bx, 4
 	mov al, bl
         aaa                       ;AF should be undefined after rol
                                   ;but practically stays cleared
-        jnc print_num_lt10_digit
+        jnc print_hex_lt10_xdigit
 	add al, 'A' - '0'
-print_num_lt10_digit:
+print_hex_lt10_xdigit:
 	add al, '0'
-	mov dh, 2
-	xchg ax, dx
-	int 0x21
+	call print_ch
 	dec ch
-	jnz print_num_loop
-	mov dl, ' '
+	jnz print_hex_loop
+	mov al, ' '
+print_ch:
+	xchg ax, dx
+	mov ah, 2
 	int 0x21
 	ret
