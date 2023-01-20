@@ -1,7 +1,7 @@
 # Small DOS intros 
 
 ## tappeto (32b)
-pix(x,y) = $x^2y^2$
+pixel(x,y) = $x^2y^2$
 
 Bonus: two extra variations! Wooooo
 
